@@ -119,7 +119,8 @@ func invokeLambda(d *schema.ResourceData, m interface{}, action string) (str str
 func resourceInvokeLambdaCreate(d *schema.ResourceData, m interface{}) error {
 	result, err := invokeLambda(d, m, "apply")
 	if err != nil {
-		fmt.Errorf("Error:", err)
+		d.Partial(true)
+		return err
 	}
 	d.SetId(result)
 	return resourceInvokeLambdaRead(d, m)
@@ -132,7 +133,8 @@ func resourceInvokeLambdaRead(d *schema.ResourceData, m interface{}) error {
 func resourceInvokeLambdaUpdate(d *schema.ResourceData, m interface{}) error {
 	result, err := invokeLambda(d, m, "apply")
 	if err != nil {
-		fmt.Errorf("Error:", err)
+		d.Partial(true)
+		return err
 	}
 	d.SetId(result)
 	return resourceInvokeLambdaRead(d, m)
@@ -141,7 +143,8 @@ func resourceInvokeLambdaUpdate(d *schema.ResourceData, m interface{}) error {
 func resourceInvokeLambdaDelete(d *schema.ResourceData, m interface{}) error {
 	result, err := invokeLambda(d, m, "destroy")
 	if err != nil {
-		fmt.Errorf("Error:", err)
+		d.Partial(true)
+		return err
 	}
 	d.SetId(result)
 	return resourceInvokeLambdaRead(d, m)
