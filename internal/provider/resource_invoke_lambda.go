@@ -39,36 +39,6 @@ func resourceInvokeLambda() *schema.Resource {
 	}
 }
 
-type getItemsRequest struct {
-	SortBy     string
-	SortOrder  string
-	ItemsToGet int
-}
-
-type getItemsResponseError struct {
-	Message string `json:"message"`
-}
-
-type getItemsResponseData struct {
-	Item string `json:"item"`
-}
-
-type getItemsResponseBody struct {
-	Result string                 `json:"result"`
-	Data   []getItemsResponseData `json:"data"`
-	Error  getItemsResponseError  `json:"error"`
-}
-
-type getItemsResponseHeaders struct {
-	ContentType string `json:"Content-Type"`
-}
-
-type getItemsResponse struct {
-	StatusCode int                     `json:"statusCode"`
-	Headers    getItemsResponseHeaders `json:"headers"`
-	Body       getItemsResponseBody    `json:"body"`
-}
-
 func invokeLambda(d *schema.ResourceData, m interface{}, action string) (str string, er error) {
 	var profile = d.Get("aws_profile").(string)
 	if profile == "" {
