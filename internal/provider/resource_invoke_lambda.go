@@ -3,9 +3,7 @@ package provider
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -71,7 +69,7 @@ type getItemsResponse struct {
 	Body       getItemsResponseBody    `json:"body"`
 }
 
-func invokeLambda(d *schema.ResourceData, m interface{}, action string) string {
+func invokeLambda(d *schema.ResourceData, m interface{}, action string) (str string, er error) {
 	var profile = d.Get("aws_profile").(string)
 	if profile == "" {
 		profile = "default"
@@ -88,16 +86,16 @@ func invokeLambda(d *schema.ResourceData, m interface{}, action string) string {
 	j["action"] = action
 	payload, err := json.Marshal(j)
 	if err != nil {
-		return fmt.Sprintf("Error getting items, StatusCode: ", err)
+		return "", fmt.Errorf("Error getting items, StatusCode: ", err)
 	}
 	result, err := client.Invoke(&lambda.InvokeInput{FunctionName: aws.String(d.Get("function_name").(string)), Payload: payload})
 	if err != nil {
-		return fmt.Sprintf("Error calling lambda function", err)
+		return "", fmt.Errorf("Error calling lambda function", err)
 	}
 	var resp getItemsResponse
 	err = json.Unmarshal(result.Payload, &resp)
 	if err != nil {
-		return fmt.Sprintf("Error unmarshalling response", err)
+		return "", fmt.Errorf("Error unmarshalling response", err)
 	}
 
 	if resp.StatusCode != 200 {
@@ -105,7 +103,7 @@ func invokeLambda(d *schema.ResourceData, m interface{}, action string) string {
 	}
 
 	if resp.Body.Result == "failure" {
-		return fmt.Sprintf("Error Failed to get items", err)
+		return "", fmt.Errorf("Error Failed to get items", err)
 	}
 
 	if len(resp.Body.Data) > 0 {
@@ -115,14 +113,13 @@ func invokeLambda(d *schema.ResourceData, m interface{}, action string) string {
 	} else {
 		fmt.Println("There were no items")
 	}
-	str := strconv.Itoa(resp.StatusCode)
-	return str
+	return strconv.Itoa(resp.StatusCode), nil
 }
 
 func resourceInvokeLambdaCreate(d *schema.ResourceData, m interface{}) error {
-	var result = fmt.Sprintf(invokeLambda(d, m, "apply"))
-	if strings.HasPrefix(result, "Error") {
-		log.Fatal(result)
+	result, err := invokeLambda(d, m, "apply")
+	if err != nil {
+		fmt.Errorf("Error:", err)
 	}
 	d.SetId(result)
 	return resourceInvokeLambdaRead(d, m)
@@ -133,18 +130,18 @@ func resourceInvokeLambdaRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceInvokeLambdaUpdate(d *schema.ResourceData, m interface{}) error {
-	var result = fmt.Sprintf(invokeLambda(d, m, "apply"))
-	if strings.HasPrefix(result, "Error") {
-		log.Fatal(result)
+	result, err := invokeLambda(d, m, "apply")
+	if err != nil {
+		fmt.Errorf("Error:", err)
 	}
 	d.SetId(result)
 	return resourceInvokeLambdaRead(d, m)
 }
 
 func resourceInvokeLambdaDelete(d *schema.ResourceData, m interface{}) error {
-	var result = fmt.Sprintf(invokeLambda(d, m, "destroy"))
-	if strings.HasPrefix(result, "Error") {
-		log.Fatal(result)
+	result, err := invokeLambda(d, m, "destroy")
+	if err != nil {
+		fmt.Errorf("Error:", err)
 	}
 	d.SetId(result)
 	return resourceInvokeLambdaRead(d, m)
