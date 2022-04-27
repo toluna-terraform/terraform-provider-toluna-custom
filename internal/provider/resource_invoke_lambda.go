@@ -3,7 +3,9 @@ package provider
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -103,7 +105,7 @@ func invokeLambda(d *schema.ResourceData, m interface{}, action string) string {
 	}
 
 	if resp.Body.Result == "failure" {
-		return fmt.Sprintf("Failed to get items", err)
+		return fmt.Sprintf("Error Failed to get items", err)
 	}
 
 	if len(resp.Body.Data) > 0 {
@@ -118,8 +120,11 @@ func invokeLambda(d *schema.ResourceData, m interface{}, action string) string {
 }
 
 func resourceInvokeLambdaCreate(d *schema.ResourceData, m interface{}) error {
-
-	d.SetId(invokeLambda(d, m, "apply"))
+	var result = fmt.Sprintf(invokeLambda(d, m, "apply"))
+	if strings.HasPrefix(result, "Error") {
+		log.Fatal(result)
+	}
+	d.SetId(result)
 	return resourceInvokeLambdaRead(d, m)
 }
 
@@ -128,11 +133,19 @@ func resourceInvokeLambdaRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceInvokeLambdaUpdate(d *schema.ResourceData, m interface{}) error {
-	d.SetId(invokeLambda(d, m, "apply"))
+	var result = fmt.Sprintf(invokeLambda(d, m, "apply"))
+	if strings.HasPrefix(result, "Error") {
+		log.Fatal(result)
+	}
+	d.SetId(result)
 	return resourceInvokeLambdaRead(d, m)
 }
 
 func resourceInvokeLambdaDelete(d *schema.ResourceData, m interface{}) error {
-	d.SetId(invokeLambda(d, m, "destroy"))
+	var result = fmt.Sprintf(invokeLambda(d, m, "destroy"))
+	if strings.HasPrefix(result, "Error") {
+		log.Fatal(result)
+	}
+	d.SetId(result)
 	return resourceInvokeLambdaRead(d, m)
 }
