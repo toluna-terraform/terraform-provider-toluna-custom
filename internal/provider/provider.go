@@ -7,7 +7,7 @@ import (
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"toluna_invoke_lambda": resourceInvokeLambda(),
+			"toluna-custom_invoke_lambda": resourceInvokeLambda(),
 		},
 	}
 }
