@@ -19,19 +19,19 @@ func resourceInvokeLambda() *schema.Resource {
 		Delete: resourceInvokeLambdaDelete,
 
 		Schema: map[string]*schema.Schema{
-			"region": &schema.Schema{
+			"region": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"aws_profile": &schema.Schema{
+			"aws_profile": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"function_name": &schema.Schema{
+			"function_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"payload": &schema.Schema{
+			"payload": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -56,16 +56,16 @@ func invokeLambda(d *schema.ResourceData, m interface{}, action string) (str str
 	j["action"] = action
 	payload, err := json.Marshal(j)
 	if err != nil {
-		return "", fmt.Errorf("Error getting items, StatusCode: ", err)
+		return "", fmt.Errorf("Error getting items, StatusCode: %s", err)
 	}
 	result, err := client.Invoke(&lambda.InvokeInput{FunctionName: aws.String(d.Get("function_name").(string)), Payload: payload})
 	if err != nil {
-		return "", fmt.Errorf("Error calling lambda function", err)
+		return "", fmt.Errorf("Error calling lambda function: %s", err)
 	}
 	var resp getItemsResponse
 	err = json.Unmarshal(result.Payload, &resp)
 	if err != nil {
-		return "", fmt.Errorf("Error unmarshalling response", err)
+		return "", fmt.Errorf("Error unmarshalling response: %s", err)
 	}
 
 	if resp.StatusCode != 200 {
@@ -73,7 +73,7 @@ func invokeLambda(d *schema.ResourceData, m interface{}, action string) (str str
 	}
 
 	if resp.Body.Result == "failure" {
-		return "", fmt.Errorf("Error Failed to get items", err)
+		return "", fmt.Errorf("Error Failed to get items :%s", err)
 	}
 
 	if len(resp.Body.Data) > 0 {

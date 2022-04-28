@@ -9,6 +9,3 @@ terraform {
   }
 }
 
-provider "toluna-custom" {
-  # Configuration options
-}

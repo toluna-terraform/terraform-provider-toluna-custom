@@ -1,9 +1,20 @@
 
-
+terraform {
+  required_providers {
+    toluna-custom = {
+      source = "toluna-terraform/toluna-custom"
+      version = ">=0.0.9"
+    }
+  }
+}
 
 provider "aws" {
   region  = "us-east-1"
   profile = "my-profile"
+}
+
+provider "toluna-custom" {
+  
 }
 
 

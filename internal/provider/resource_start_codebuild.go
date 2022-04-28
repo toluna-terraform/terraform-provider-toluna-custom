@@ -1,7 +1,6 @@
 package provider
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -18,30 +17,57 @@ func resourceStartCodebuild() *schema.Resource {
 		Delete: resourceStartCodebuildDelete,
 
 		Schema: map[string]*schema.Schema{
-			"region": &schema.Schema{
+			"region": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"aws_profile": &schema.Schema{
+			"aws_profile": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"project_name": &schema.Schema{
+			"project_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"payload": &schema.Schema{
-				Type:     schema.TypeString,
+			"environment_variables": {
+				Type:     schema.TypeSet,
 				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+
+						"type": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+								var result bool = false
+								v := val.(string)
+								arr := [3]string{"PLAINTEXT", "SECRETS_MANAGER", "PARAMETER_STORE"}
+								for _, x := range arr {
+									if x == v {
+										result = true
+										break
+									}
+								}
+								if !result {
+									errs = append(errs, fmt.Errorf("%q must Equal one of: [PLAINTEXT | SECRETS_MANAGER | PARAMETER_STORE] , got: %s", key, v))
+								}
+								return
+							},
+						},
+					},
+				},
 			},
 		},
 	}
-}
-
-type getParams []struct {
-	Name  string `json:"name"`
-	Type  string `json:"type"`
-	Value string `json:"value"`
 }
 
 func startCodebuild(d *schema.ResourceData, m interface{}, action string) (str string, er error) {
@@ -61,18 +87,15 @@ func startCodebuild(d *schema.ResourceData, m interface{}, action string) (str s
 		Type:  aws.String("PLAINTEXT"),
 		Value: aws.String(action)}
 	envVar = append(envVar, param)
-	var envVars getParams
-	err := json.Unmarshal([]byte(d.Get("payload").(string)), &envVars)
-	if err != nil {
-		return "", fmt.Errorf("Error parsing environment variables", err)
-	}
-	for i := range envVars {
-		fmt.Println(envVars[i])
-		envVar = append(envVar, &codebuild.EnvironmentVariable{
-			Name:  aws.String(envVars[i].Name),
-			Type:  aws.String(envVars[i].Type),
-			Value: aws.String(envVars[i].Value)},
-		)
+	envVars := d.Get("environment_variables").(*schema.Set)
+	envVars_list := envVars.List()
+	for i := range envVars_list {
+		envVars_map := envVars_list[i].(map[string]interface{})
+		param := &codebuild.EnvironmentVariable{
+			Name:  aws.String(envVars_map["name"].(string)),
+			Type:  aws.String(envVars_map["type"].(string)),
+			Value: aws.String(envVars_map["value"].(string))}
+		envVar = append(envVar, param)
 	}
 	input := &codebuild.StartBuildInput{
 		ProjectName:                  aws.String(d.Get("project_name").(string)),
@@ -80,7 +103,7 @@ func startCodebuild(d *schema.ResourceData, m interface{}, action string) (str s
 	}
 	result, err := client.StartBuild(input)
 	if err != nil {
-		return "", fmt.Errorf("Error calling build project", err)
+		return "", fmt.Errorf("Error calling build project:%s", err)
 	}
 	Ids := []*string{}
 	Ids = append(Ids, result.Build.Id)
