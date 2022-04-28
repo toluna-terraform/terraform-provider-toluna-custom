@@ -18,5 +18,5 @@ resource "toluna-custom_start_codebuild" "example" {
   region = "us-east-1"
   aws_profile = "my-profile"
   project_name = "my_project"
-  payload = "{\"source_vpc\": \"bread_qa\",\"target_vpc\": \"butter_qa\"}"
+  payload = "{\"my_property\": \"example\"}"
 }

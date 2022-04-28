@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -37,6 +38,12 @@ func resourceStartCodebuild() *schema.Resource {
 	}
 }
 
+type getParams []struct {
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
 func startCodebuild(d *schema.ResourceData, m interface{}, action string) (str string, er error) {
 	var profile = d.Get("aws_profile").(string)
 	if profile == "" {
@@ -54,6 +61,19 @@ func startCodebuild(d *schema.ResourceData, m interface{}, action string) (str s
 		Type:  aws.String("PLAINTEXT"),
 		Value: aws.String(action)}
 	envVar = append(envVar, param)
+	var envVars getParams
+	err := json.Unmarshal([]byte(d.Get("payload").(string)), &envVars)
+	if err != nil {
+		return "", fmt.Errorf("Error parsing environment variables", err)
+	}
+	for i := range envVars {
+		fmt.Println(envVars[i])
+		envVar = append(envVar, &codebuild.EnvironmentVariable{
+			Name:  aws.String(envVars[i].Name),
+			Type:  aws.String(envVars[i].Type),
+			Value: aws.String(envVars[i].Value)},
+		)
+	}
 	input := &codebuild.StartBuildInput{
 		ProjectName:                  aws.String(d.Get("project_name").(string)),
 		EnvironmentVariablesOverride: envVar,
