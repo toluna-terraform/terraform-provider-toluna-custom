@@ -36,14 +36,28 @@ resource "toluna-custom_invoke_lambda" "example" {
   region = "us-east-1"
   aws_profile = "my-profile"
   function_name = "my_lambda"
-  payload = "{\"example\": \"my_example\"}"
+  payload = jsonencode({"name": "example pay load"})
 }
 
 resource "toluna-custom_start_codebuild" "example" {
   region = "us-east-1"
   aws_profile = "my-profile"
   project_name = "my_project"
-  payload = "{\"my_property\": \"example\"}"
+    environment_variables  {
+    name = "my-variable"
+    value = "FOO"
+    type = "PLAINTEXT"
+  }
+  environment_variables  {
+    name = "my-secret-variable"
+    value = "BAR"
+    type = "PARAMETER_STORE"
+  }
+  environment_variables  {
+    name = "my-other-secret-variable"
+    value = "BAR"
+    type = "SECRETS_MANAGER"
+  }
 }
 ```
 
